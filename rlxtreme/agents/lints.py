@@ -194,8 +194,12 @@ class LinTS(Base):
 
         if n_actions is None:
             recommendation_id = max(score, key=score.get)
+            if self.act_db_type == "memory":
+                action = self._action_storage.get(recommendation_id)
+            else:
+                action = self._action_storage.get(recommendation_id, model_id=model_id)
             recommendations = self._recommendation_cls(
-                action=self._action_storage.get(recommendation_id),
+                action=action,
                 estimated_reward=estimated_reward[recommendation_id],
                 uncertainty=uncertainty[recommendation_id],
                 score=score[recommendation_id],
@@ -204,9 +208,14 @@ class LinTS(Base):
             recommendation_ids = sorted(score, key=score.get, reverse=True)[:n_actions]
             recommendations = []  # pylint: disable=redefined-variable-type
             for action_id in recommendation_ids:
+                if self.act_db_type == "memory":
+                    action = self._action_storage.get(action_id)
+                else:
+                    action = self._action_storage.get(action_id, model_id=model_id)
+
                 recommendations.append(
                     self._recommendation_cls(
-                        action=self._action_storage.get(action_id),
+                        action=action,
                         estimated_reward=estimated_reward[action_id],
                         uncertainty=uncertainty[action_id],
                         score=score[action_id],
@@ -224,7 +233,7 @@ class LinTS(Base):
             history_id = self._history_storage.add_history(context, recommendations)
         return history_id, recommendations
 
-    def reward(self, history_id, rewards):
+    def reward(self, history_id, rewards, model_id=None):
         """Reward the previous action with reward.
 
         Parameters
@@ -235,10 +244,18 @@ class LinTS(Base):
         rewards : dictionary
             The dictionary {action_id, reward}, where reward is a float.
         """
-        context = self._history_storage.get_unrewarded_history(history_id).context
+        if self.db_type == "rlite":
+            context = self._history_storage.get_unrewarded_history(
+                history_id, model_id=model_id
+            ).context
+            # Update the model
+            model = self._model_storage.get_model(model_id=model_id)
+        else:
+            context = self._history_storage.get_unrewarded_history(history_id).context
 
-        # Update the model
-        model = self._model_storage.get_model()
+            # Update the model
+            model = self._model_storage.get_model()
+
         B = model["B"]  # pylint: disable=invalid-name
         f = model["f"]
 
@@ -247,12 +264,19 @@ class LinTS(Base):
             B += context_t.dot(context_t.T)  # pylint: disable=invalid-name
             f += reward * context_t
             mu_hat = np.linalg.inv(B).dot(f)
-        self._model_storage.save_model({"B": B, "mu_hat": mu_hat, "f": f})
 
-        # Update the history
-        self._history_storage.add_reward(history_id, rewards)
+        if self.db_type == "rlite":
+            self._model_storage.save_model(
+                model_id=model_id, model={"B": B, "mu_hat": mu_hat, "f": f}
+            )
+            # Update the history
+            self._history_storage.add_reward(history_id, model_id, rewards)
 
-    def add_action(self, actions):
+        else:
+            # Update the history
+            self._history_storage.add_reward(history_id, rewards)
+
+    def add_action(self, actions, model_id=None):
         """Add new actions (if needed).
 
         Parameters
@@ -260,9 +284,14 @@ class LinTS(Base):
         actions : iterable
             A list of Action oBjects for recommendation
         """
-        self._action_storage.add(actions)
+        if self.act_db_type == "memory":
+            new_action_ids = self._action_storage.add(actions)
+        else:
+            new_action_ids = self._action_storage.add(actions, model_id=model_id)
 
-    def remove_action(self, action_id):
+        return new_action_ids
+
+    def remove_action(self, action_id, model_id=None):
         """Remove action by id.
 
         Parameters
@@ -270,4 +299,7 @@ class LinTS(Base):
         action_id : int
             The id of the action to remove.
         """
-        self._action_storage.remove(action_id)
+        if self.act_db_type == "rlite":
+            self._action_storage.remove(action_id, model_id=model_id)
+        else:
+            self._action_storage.remove(action_id)

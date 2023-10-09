@@ -171,8 +171,12 @@ class LinUCB(Base):
 
         if n_actions is None:
             recommendation_id = max(score, key=score.get)
+            if self.act_db_type == "memory":
+                action = self._action_storage.get(recommendation_id)
+            else:
+                action = self._action_storage.get(recommendation_id, model_id=model_id)
             recommendations = self._recommendation_cls(
-                action=self._action_storage.get(recommendation_id),
+                action=action,
                 estimated_reward=estimated_reward[recommendation_id],
                 uncertainty=uncertainty[recommendation_id],
                 score=score[recommendation_id],
@@ -181,9 +185,13 @@ class LinUCB(Base):
             recommendation_ids = sorted(score, key=score.get, reverse=True)[:n_actions]
             recommendations = []  # pylint: disable=redefined-variable-type
             for action_id in recommendation_ids:
+                if self.act_db_type == "memory":
+                    action = self._action_storage.get(action_id)
+                else:
+                    action = self._action_storage.get(action_id, model_id=model_id)
                 recommendations.append(
                     self._recommendation_cls(
-                        action=self._action_storage.get(action_id),
+                        action=action,
                         estimated_reward=estimated_reward[action_id],
                         uncertainty=uncertainty[action_id],
                         score=score[action_id],
@@ -301,7 +309,10 @@ class LinUCB(Base):
         del model["theta"][action_id]
         if self.db_type == "rlite":
             self._model_storage.save_model(model_id, model)
-            self._action_storage.remove(action_id, model_id=model_id)
         else:
             self._model_storage.save_model(model)
+
+        if self.act_db_type == "rlite":
+            self._action_storage.remove(action_id, model_id=model_id)
+        else:
             self._action_storage.remove(action_id)

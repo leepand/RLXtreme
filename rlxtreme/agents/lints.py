@@ -273,6 +273,7 @@ class LinTS(Base):
             self._history_storage.add_reward(history_id, model_id, rewards)
 
         else:
+            self._model_storage.save_model({"B": B, "mu_hat": mu_hat, "f": f})
             # Update the history
             self._history_storage.add_reward(history_id, rewards)
 

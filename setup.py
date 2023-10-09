@@ -28,7 +28,6 @@ setup(
     author_email="pandeng.li@163.com",
     url="https://github.com/leepand/RLXtreme",
     install_requires=install_requires,
-
     classifiers=[
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Programming Language :: Python :: 3.8",

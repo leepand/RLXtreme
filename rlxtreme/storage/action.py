@@ -93,8 +93,7 @@ class ActionStorage(object):
 
     @abstractmethod
     def count(self):
-        r"""Count actions
-        """
+        r"""Count actions"""
         pass
 
     @abstractmethod

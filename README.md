@@ -23,13 +23,13 @@ pip install.
 Here's a simple example that demonstrates how to train a DQN agent using RLXtreme:
 
 ```python
-import rlextreme
+import rlxtreme
 
 # Create environment
-env = rlextreme.make_env("CartPole-v1")
+env = rlxtreme.make_env("CartPole-v1")
 
 # Create DQN agent
-agent = rlextreme.DQN()
+agent = rlxtreme.DQN()
 
 # Train the agent
 agent.train(env)

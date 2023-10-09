@@ -48,6 +48,8 @@ class Base(object):
         db_type="rlite",
         action_db_type="memory",
     ):
+        self.db_type = db_type
+        self.act_db_type = action_db_type
         if db_type == "rlite":
             self._history_storage = RliteHistoryStorage(his_db=his_db)
             self._model_storage = RliteModelStorage(model_db=model_db, model=model)
@@ -97,16 +99,27 @@ class Base(object):
         """
         pass
 
-    def _get_action_with_empty_action_storage(self, context, n_actions):
+    def _get_action_with_empty_action_storage(
+        self, context, n_actions, history_id=None, model_id=None
+    ):
         if n_actions is None:
             recommendations = None
         else:
             recommendations = []
-        history_id = self._history_storage.add_history(context, recommendations)
+
+        if self.db_type == "rlite":
+            history_id = self._history_storage.add_history(
+                history_id=history_id,
+                model_id=model_id,
+                context=context,
+                recoms=recommendations,
+            )
+        else:
+            history_id = self._history_storage.add_history(context, recommendations)
         return history_id, recommendations
 
     @abstractmethod
-    def reward(self, history_id, rewards):
+    def reward(self, history_id, rewards, model_id=None):
         """Reward the previous action with reward.
 
         Parameters
@@ -120,7 +133,7 @@ class Base(object):
         pass
 
     @abstractmethod
-    def add_action(self, actions):
+    def add_action(self, actions, model_id=None):
         """Add new actions (if needed).
 
         Parameters
@@ -130,7 +143,7 @@ class Base(object):
         """
         pass
 
-    def update_action(self, action):
+    def update_action(self, action, model_id=None):
         """Update action.
 
         Parameters
@@ -141,7 +154,7 @@ class Base(object):
         self._action_storage.update(action)
 
     @abstractmethod
-    def remove_action(self, action_id):
+    def remove_action(self, action_id, model_id=None):
         """Remove action by id.
 
         Parameters

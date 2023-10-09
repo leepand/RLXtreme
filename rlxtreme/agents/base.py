@@ -4,6 +4,14 @@ rlxtreme interfaces
 from abc import abstractmethod
 
 from ..storage import Recom
+from ..storage import (
+    MemoryActionStorage,
+    MemoryHistoryStorage,
+    MemoryModelStorage,
+    RliteActionStorage,
+    RliteHistoryStorage,
+    RliteModelStorage,
+)
 
 
 class Base(object):
@@ -31,11 +39,31 @@ class Base(object):
     """
 
     def __init__(
-        self, history_storage, model_storage, action_storage, recommendation_cls=None
+        self,
+        his_db=None,
+        model_db=None,
+        model=None,
+        action_db=None,
+        recommendation_cls=None,
+        db_type="rlite",
+        action_db_type="memory",
     ):
-        self._history_storage = history_storage
-        self._model_storage = model_storage
-        self._action_storage = action_storage
+        if db_type == "rlite":
+            self._history_storage = RliteHistoryStorage(his_db=his_db)
+            self._model_storage = RliteModelStorage(model_db=model_db, model=model)
+            if action_db_type == "memory":
+                self._action_storage = MemoryActionStorage()
+            else:
+                self._action_storage = RliteActionStorage(action_db=action_db)
+
+        else:
+            self._history_storage = MemoryHistoryStorage()
+            self._model_storage = MemoryModelStorage()
+            if action_db_type == "memory":
+                self._action_storage = MemoryActionStorage()
+            else:
+                self._action_storage = RliteActionStorage(action_db=action_db)
+
         if recommendation_cls is None:
             self._recommendation_cls = Recom
         else:

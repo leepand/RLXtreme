@@ -45,7 +45,7 @@ setup(
     ],
     package_dir={
         'rlxtreme': 'rlxtreme',
-        'rlxtreme.bandit': 'rlxtreme/agent',
+        'rlxtreme.agent': 'rlxtreme/agent',
         'rlxtreme.storage': 'rlxtreme/storage',
         'rlxtreme.utils': 'rlxtreme/utils',
     },

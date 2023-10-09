@@ -54,11 +54,18 @@ class LinUCB(Base):
         action_db=None,
         recommendation_cls=None,
         db_type="rlite",
+        action_db_type="memory",
         input_dim=128,
         alpha=0.5,
     ):
         super(LinUCB, self).__init__(
-            his_db, model_db, model, action_db, recommendation_cls, db_type
+            his_db,
+            model_db,
+            model,
+            action_db,
+            recommendation_cls,
+            db_type,
+            action_db_type,
         )
         self.alpha = alpha
         self.context_dimension = input_dim
@@ -99,6 +106,8 @@ class LinUCB(Base):
         """disjoint LINUCB algorithm."""
         if self.db_type == "rlite":
             model = self._model_storage.get_model(model_id=model_id)
+            if model is None:
+                model = self.model
         else:
             model = self._model_storage.get_model()
         A_inv = model["A_inv"]  # pylint: disable=invalid-name
@@ -108,7 +117,12 @@ class LinUCB(Base):
         estimated_reward = {}
         uncertainty = {}
         score = {}
-        for action_id in self._action_storage.iterids():
+        if self.act_db_type == "memory":
+            action_ids = self._action_storage.iterids()
+        else:
+            action_ids = self._action_storage.iterids(model_id=model_id)
+
+        for action_id in action_ids:
             action_context = np.reshape(context[action_id], (-1, 1))
             estimated_reward[action_id] = float(theta[action_id].T.dot(action_context))
             uncertainty[action_id] = float(

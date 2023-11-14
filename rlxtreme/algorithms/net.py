@@ -233,9 +233,9 @@ class PolicyNetwork(object):
         # Multiply the signal that makes actions taken more probable by the discounted
         # return of that action.  This will pull the weights in the direction that
         # makes *better* actions more probable.
-        self.policy_gradient = np.zeros(action_gradient.shape)
+        policy_gradient = np.zeros(action_gradient.shape)
         for t in range(0, len(returns)):
-            self.policy_gradient[t] = action_gradient[t] * returns[t]
+            policy_gradient[t] = action_gradient[t] * returns[t]
 
         p = params
         W1, b1, W2, b2 = p["W1"], p["b1"], p["W2"], p["b2"]
@@ -245,7 +245,7 @@ class PolicyNetwork(object):
         fwd_affine1 = np.concatenate(cache["fwd_affine1"])
         fwd_x = np.concatenate(cache["fwd_x"])
 
-        dout = -self.policy_gradient
+        dout = -policy_gradient
         # Analytic gradient of last layer for backprop
         # affine2 = W2*relu1 + b2
         # drelu1 = W2 * dout
